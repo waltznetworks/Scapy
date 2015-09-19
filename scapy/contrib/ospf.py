@@ -195,14 +195,16 @@ _OSPF_LStypes = {1: "router",
                  3: "summaryIP",
                  4: "summaryASBR",
                  5: "external",
-                 7: "NSSAexternal"}
+                 7: "NSSAexternal",
+                 8: "Stanford"}
 
 _OSPF_LSclasses = {1: "OSPF_Router_LSA",
                    2: "OSPF_Network_LSA",
                    3: "OSPF_SummaryIP_LSA",
                    4: "OSPF_SummaryASBR_LSA",
                    5: "OSPF_External_LSA",
-                   7: "OSPF_NSSA_External_LSA"}
+                   7: "OSPF_NSSA_External_LSA",
+                   8: "Stanford_LSA"}
 
 
 def ospf_lsa_checksum(lsa):
@@ -308,6 +310,12 @@ class OSPF_BaseLSA(Packet):
         length = self.len
         return "", s
 
+class Stanford_LSA(Packet):
+    name = "Stanford LSA"
+    fields_desc = [IPField("subnet", "0.0.0.0"),
+                   IPField("mask", "255.255.255.240"),
+                   IPField("id", "1.1.1.1"),
+                   IntField("tx_rate", 100)]
 
 class OSPF_Router_LSA(OSPF_BaseLSA):
     name = "OSPF Router LSA"
@@ -429,6 +437,14 @@ class OSPF_LSReq(Packet):
                                   length_from = lambda pkt:pkt.underlayer.len - 24)]
 
 
+class Stanford_LSUpd(Packet):
+    name = "Stanford OSPF Link State Update"
+    fields_desc = [Field("sequence", -32768, "h"),
+                   ShortField("ttl", 64),
+                   FieldLenField("lsacount", None, fmt="!I", count_of="lsalist"),
+                   PacketListField("lsalist", [], _LSAGuessPayloadClass,
+                                count_from = lambda pkt: pkt.lsacount,
+                                length_from = lambda pkt: pkt.underlayer.len - 24)]
 class OSPF_LSUpd(Packet):
     name = "OSPF Link State Update"
     fields_desc = [FieldLenField("lsacount", None, fmt="!I", count_of="lsalist"),
